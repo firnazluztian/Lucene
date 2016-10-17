@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -34,43 +35,43 @@ import org.apache.lucene.util.BytesRef;
 
 public class SearchFiles {
 	public static void main(String[] args) throws IOException {
-		
-		/*// print output to output.txt
+		/*
+		// print output to output.txt | uncomment to disable
 		PrintStream out = new PrintStream(new FileOutputStream("output.txt"));
 		System.setOut(out);
 		*/
 		
-		//String index = "I:\\IR\\p2\\indexing\\index";
-		//String index = "I:\\IR\\p2\\index";
 		String path = getPath();
 		IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(path)));
 		//IndexSearcher searcher = new IndexSearcher(reader);
 		
-		String term = getTerm();
-		Term t = new Term(term); // input term here
+		/*// unused yet
+		String term = getTerm(); // get term from input.txt
+		Term t = new Term(term); 
+			*/
 		
-	
 		// get all the terms
-		long totalf = reader.totalTermFreq(t);
-		System.out.println(totalf);
 		Fields fields = MultiFields.getFields(reader);
 		java.util.Iterator<String> fieldsIter = fields.iterator();
+
 		while (fieldsIter.hasNext()) {
 		    String fieldname = fieldsIter.next();
 		    TermsEnum terms = fields.terms(fieldname).iterator();
 		    BytesRef bterm;
+		    
 		    while ((bterm = terms.next()) != null) {
-		        System.out.println(fieldname + ":" + bterm.utf8ToString() + " total:" + terms.totalTermFreq());
-		    }
+		        PostingsEnum postenum = MultiFields.getTermDocsEnum(reader, fieldname, bterm);
+		        System.out.println("GetPostings");
+			    System.out.println(fieldname + ": " + bterm.utf8ToString());
+			    System.out.print("Postings list: ");
+			    
+			    while ((postenum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)) {
+			    	System.out.print(postenum.docID()+" ");
+			    }
+			    System.out.println("");
+		    }  
 		}
-		
-		getPostings(t);
-		
-		// new code
-		//String query = t.toString();
-		//System.out.println(reader.getTermVector(0, query));
-		//System.out.println(reader.numDocs()+" max doc");
-				
+		//getPostings(t);				
 	}
 	
 	private static String getTerm() throws FileNotFoundException, UnsupportedEncodingException {
